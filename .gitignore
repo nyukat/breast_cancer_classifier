@@ -1,0 +1,4 @@
+*.pyc
+.idea/
+.ipynb_checkpoints
+sample_output/
