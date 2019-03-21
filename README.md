@@ -254,6 +254,6 @@ Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, Stanisła
     @article{wu2019breastcancer, 
         title = {Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening},
         author = {Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, Stanis\l{}aw Jastrz\k{e}bski, Thibault F\'{e}vry, Joe Katsnelson, Eric Kim, Stacey Wolfson, Ujas Parikh, Sushma Gaddam, Leng Leng Young Lin, Kara Ho, Joshua D. Weinstein, Beatriu Reig, Yiming Gao, Hildegard Toth, Kristine Pysarenko, Alana Lewin, Jiyon Lee, Krystal Airola, Eralda Mema, Stephanie Chung, Esther Hwang, Naziya Samreen, S. Gene Kim, Laura Heacock, Linda Moy, Kyunghyun Cho, Krzysztof J. Geras}, 
-        journal = {arXiv:?.?},
+        journal = {arXiv:1903.08297},
         year = {2019}
     }
