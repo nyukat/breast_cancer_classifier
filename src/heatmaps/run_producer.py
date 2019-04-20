@@ -26,7 +26,6 @@ Generates benign and malignant heatmaps for cropped images using patch classifie
 import numpy as np
 import random
 import os
-import tensorflow as tf
 import argparse
 import tqdm
 
@@ -39,9 +38,6 @@ import src.utilities.pickling as pickling
 import src.utilities.saving_images as saving_images
 import src.utilities.tools as tools
 from src.constants import VIEWS
-
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "4"
-tf.logging.set_verbosity(tf.logging.ERROR)
 
 
 def stride_list_generator(img_width, patch_size, more_patches=0, stride_fixed=-1):
