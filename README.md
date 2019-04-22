@@ -50,7 +50,7 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 
 | index | left_benign  | right_benign | left_malignant | right_malignant |
 | ----- | ------------ | ------------ | -------------- | --------------- |
-| 0     | 0.0612       | 0.0099       | 0.0754         | 0.0179          |
+| 0     | 0.0612       | 0.0099       | 0.0555         | 0.0063          |
 | 1     | 0.0507       | 0.0009       | 0.8025         | 0.9000          |
 | 2     | 0.2877       | 0.2524       | 0.2286         | 0.0461          |
 | 3     | 0.4181       | 0.3174       | 0.3172         | 0.0485          |
