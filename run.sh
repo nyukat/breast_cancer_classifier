@@ -18,7 +18,7 @@ EXAM_LIST_PATH='sample_output/data.pkl'
 HEATMAPS_PATH='sample_output/heatmaps'
 IMAGE_PREDICTIONS_PATH='sample_output/image_predictions.csv'
 IMAGEHEATMAPS_PREDICTIONS_PATH='sample_output/imageheatmaps_predictions.csv'
-PYTHONPATH=$(pwd):$PYTHONPATH
+export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo 'Stage 1: Crop Mammograms'
 python3 src/cropping/crop_mammogram.py \
