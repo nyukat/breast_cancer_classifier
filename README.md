@@ -30,7 +30,7 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 
 `run.sh` will automatically run the entire pipeline and save the prediction results in csv. 
 
-We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in run.sh to 'cpu'.  
+We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in `run.sh` to 'cpu'.  
 
 If running the individual Python scripts, please include the path to this repository in your `PYTHONPATH` . 
 
