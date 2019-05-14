@@ -30,7 +30,7 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 
 `run.sh` will automatically run the entire pipeline and save the prediction results in csv. 
 
-We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in run.sh to 'cpu'.  
+We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in `run.sh` to 'cpu'.  
 
 If running the individual Python scripts, please include the path to this repository in your `PYTHONPATH` . 
 
@@ -242,6 +242,27 @@ python3 src/modeling/run_model.py \
 ```
 
 This command makes predictions using images and heatmaps for `$NUM_EPOCHS` epochs with random augmentation and outputs averaged predictions per exam to `$IMAGEHEATMAPS_PREDICTIONS_PATH`. 
+
+## Getting image from dicom files and saving as 16-bit png files
+
+Dicom files can be converted into png files with the following function, which then can be used by the code in our repository (pypng 0.0.19 and pydicom 1.2.2 libraries are required). 
+
+```python3
+import png
+import pydicom
+
+def save_dicom_image_as_png(dicom_filename, png_filename, bitdepth=12):
+    """
+    Save 12-bit mammogram from dicom as rescaled 16-bit png file.
+    :param dicom_filename: path to input dicom file.
+    :param png_filename: path to output png file.
+    :param bitdepth: bit depth of the input image. Set it to 12 for 12-bit mammograms.
+    """
+    image = pydicom.read_file(dicom_filename).pixel_array
+    with open(png_filename, 'wb') as f:
+        writer = png.Writer(height=image.shape[0], width=image.shape[1], bitdepth=bitdepth, greyscale=True)
+        writer.write(f, image.tolist())
+```
 
 ## Reference
 
