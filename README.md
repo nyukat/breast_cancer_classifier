@@ -9,6 +9,8 @@ This is an implementation of the model used for breast cancer classification as 
 
 Both models act on screening mammography exams with four standard views (L-CC, R-CC, L-MLO, R-MLO). As a part of this repository, we provide 4 sample exams (in `sample_data/images` directory and exam list stored in `sample_data/exam_list_before_cropping.pkl`). Heatmap generation model and cancer classification models are implemented in PyTorch. 
 
+**Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
+
 ## Prerequisites
 
 * Python (3.6)
@@ -40,21 +42,20 @@ Predictions using *image-only* model (found in `sample_output/image_predictions.
 
 | index | left_benign | right_benign | left_malignant | right_malignant |
 | ----- | ----------- | ------------ | -------------- | --------------- |
-| 0     | 0.0580      | 0.0091       | 0.0754         | 0.0179          |
-| 1     | 0.0646      | 0.0012       | 0.9536         | 0.7258          |
-| 2     | 0.4388      | 0.2325       | 0.3526         | 0.1061          |
-| 3     | 0.3765      | 0.0909       | 0.6483         | 0.2579          |
+| 0     | 0.0580      | 0.0754       | 0.0091         | 0.0179          |
+| 1     | 0.0646      | 0.9536       | 0.0012         | 0.7258          |
+| 2     | 0.4388      | 0.3526       | 0.2325         | 0.1061          |
+| 3     | 0.3765      | 0.6483       | 0.0909         | 0.2579          |
 
 
 Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatmap_predictions.csv` by default):
 
 | index | left_benign  | right_benign | left_malignant | right_malignant |
 | ----- | ------------ | ------------ | -------------- | --------------- |
-| 0     | 0.0612       | 0.0099       | 0.0555         | 0.0063          |
-| 1     | 0.0507       | 0.0009       | 0.8025         | 0.9000          |
-| 2     | 0.2877       | 0.2524       | 0.2286         | 0.0461          |
-| 3     | 0.4181       | 0.3174       | 0.3172         | 0.0485          |
-
+| 0     | 0.0612       | 0.0555       | 0.0099         | 0.0063          |
+| 1     | 0.0507       | 0.8025       | 0.0009         | 0.9000          |
+| 2     | 0.2877       | 0.2286       | 0.2524         | 0.0461          |
+| 3     | 0.4181       | 0.3172       | 0.3174         | 0.0485          |
 
 
 ## Data

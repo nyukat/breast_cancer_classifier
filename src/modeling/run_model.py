@@ -114,7 +114,7 @@ def run_model(model, exam_list, parameters):
                 batch_predictions = compute_batch_predictions(output)
                 pred_df = pd.DataFrame({k: v[:, 1] for k, v in batch_predictions.items()})
                 pred_df.columns.names = ["label", "view_angle"]
-                predictions = pred_df.T.reset_index().groupby("label").mean().T.values
+                predictions = pred_df.T.reset_index().groupby("label").mean().T[LABELS.LIST].values
                 predictions_for_datum.append(predictions)
             predictions_ls.append(np.mean(np.concatenate(predictions_for_datum, axis=0), axis=0))
 
