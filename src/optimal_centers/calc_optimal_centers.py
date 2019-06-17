@@ -31,7 +31,7 @@ import pandas as pd
 def get_images_optimal_window_info(image, com, window_dim_ls, step=1,
                                    tl_br_constraint=None):
     """
-    Given an image, windom_dim_ls to search over, and constraints on tl_br
+    Given an image, window_dim_ls to search over, and constraints on tl_br
     (e.g. rightmost-pixel constraint), return data about the potential
     optimal windows
     """

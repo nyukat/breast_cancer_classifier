@@ -45,7 +45,6 @@ class SplitBreastModel(nn.Module):
         self.output_layer_mlo = layers.OutputLayer(256 * 2, (4, 2))
 
         self.all_views_avg_pool = layers.AllViewsAvgPool()
-        self.all_views_pad = layers.AllViewsPad()
         self.all_views_gaussian_noise_layer = layers.AllViewsGaussianNoise(0.01)
 
     def forward(self, x):
@@ -71,50 +70,105 @@ class SplitBreastModel(nn.Module):
         return h
 
 
+class ImageBreastModel(nn.Module):
+    def __init__(self, input_channels):
+        super(ImageBreastModel, self).__init__()
+
+        self.four_view_resnet = FourViewResNet(input_channels)
+
+        self.fc1_lcc = nn.Linear(256, 256)
+        self.fc1_rcc = nn.Linear(256, 256)
+        self.fc1_lmlo = nn.Linear(256, 256)
+        self.fc1_rmlo = nn.Linear(256, 256)
+        self.output_layer_lcc = layers.OutputLayer(256, (4, 2))
+        self.output_layer_rcc = layers.OutputLayer(256, (4, 2))
+        self.output_layer_lmlo = layers.OutputLayer(256, (4, 2))
+        self.output_layer_rmlo = layers.OutputLayer(256, (4, 2))
+
+        self.all_views_avg_pool = layers.AllViewsAvgPool()
+        self.all_views_gaussian_noise_layer = layers.AllViewsGaussianNoise(0.01)
+
+    def forward(self, x):
+        h = self.all_views_gaussian_noise_layer(x)
+        result = self.four_view_resnet(h)
+        h = self.all_views_avg_pool(result)
+
+        h_lcc = F.relu(self.fc1_lcc(h[VIEWS.L_CC]))
+        h_rcc = F.relu(self.fc1_rcc(h[VIEWS.R_CC]))
+        h_lmlo = F.relu(self.fc1_lmlo(h[VIEWS.L_MLO]))
+        h_rmlo = F.relu(self.fc1_rmlo(h[VIEWS.R_MLO]))
+
+        h_lcc = self.output_layer_lcc(h_lcc)
+        h_rcc = self.output_layer_rcc(h_rcc)
+        h_lmlo = self.output_layer_lmlo(h_lmlo)
+        h_rmlo = self.output_layer_rmlo(h_rmlo)
+
+        h = {
+            VIEWS.L_CC: h_lcc,
+            VIEWS.R_CC: h_rcc,
+            VIEWS.L_MLO: h_lmlo,
+            VIEWS.R_MLO: h_rmlo,
+        }
+
+        return h
+
+
+class SingleImageBreastModel(nn.Module):
+    def __init__(self, input_channels):
+        super(SingleImageBreastModel, self).__init__()
+
+        self.view_resnet = resnet22(input_channels)
+
+        self.fc1 = nn.Linear(256, 256)
+        self.output_layer = layers.OutputLayer(256, (2, 2))
+
+        self.all_views_avg_pool = layers.AllViewsAvgPool()
+        self.all_views_gaussian_noise_layer = layers.AllViewsGaussianNoise(0.01)
+
+    def forward(self, x):
+        h = self.all_views_gaussian_noise_layer.single_add_gaussian_noise(x)
+        result = self.view_resnet(h)
+        h = self.all_views_avg_pool.single_avg_pool(result)
+        h = F.relu(self.fc1(h))
+        h = self.output_layer(h)[:2]
+        return h
+
+    def load_state_from_shared_weights(self, state_dict, view):
+        view_angle = view.lower().split("-")[-1]
+        view_key = view.lower().replace("-", "")
+        self.view_resnet.load_state_dict(
+            filter_strip_prefix(state_dict, "four_view_resnet.{}.".format(view_angle))
+        )
+        self.fc1.load_state_dict(
+            filter_strip_prefix(state_dict, "fc1_{}.".format(view_key))
+        )
+        self.output_layer.load_state_dict({
+            "fc_layer.weight": state_dict["output_layer_{}.fc_layer.weight".format(view_key)][:4],
+            "fc_layer.bias": state_dict["output_layer_{}.fc_layer.bias".format(view_key)][:4],
+        })
+
+
 class FourViewResNet(nn.Module):
     def __init__(self, input_channels):
         super(FourViewResNet, self).__init__()
 
-        self.cc = ViewResNetV2(
-            input_channels=input_channels, 
-            num_filters=16,
-            first_layer_kernel_size=7, 
-            first_layer_conv_stride=2,
-            blocks_per_layer_list=[2, 2, 2, 2, 2], 
-            block_strides_list=[1, 2, 2, 2, 2], 
-            block_fn=layers.BasicBlockV2,
-            first_layer_padding=0,
-            first_pool_size=3, 
-            first_pool_stride=2, 
-            first_pool_padding=0,
-            growth_factor=2
-        )
-        self.mlo = ViewResNetV2(
-            input_channels=input_channels, 
-            num_filters=16,
-            first_layer_kernel_size=7, 
-            first_layer_conv_stride=2,
-            blocks_per_layer_list=[2, 2, 2, 2, 2], 
-            block_strides_list=[1, 2, 2, 2, 2], 
-            block_fn=layers.BasicBlockV2,
-            first_layer_padding=0,
-            first_pool_size=3, 
-            first_pool_stride=2, 
-            first_pool_padding=0,
-            growth_factor=2
-        )
-        self.l_cc = self.cc
-        self.l_mlo = self.mlo
-        self.r_cc = self.cc
-        self.r_mlo = self.mlo
+        self.cc = resnet22(input_channels)
+        self.mlo = resnet22(input_channels)
+        self.model_dict = {}
+        self.model_dict[VIEWS.L_CC] = self.l_cc = self.cc
+        self.model_dict[VIEWS.L_MLO] = self.l_mlo = self.mlo
+        self.model_dict[VIEWS.R_CC] = self.r_cc = self.cc
+        self.model_dict[VIEWS.R_MLO] = self.r_mlo = self.mlo
 
     def forward(self, x):
-        h_dict = col.OrderedDict()
-        h_dict[VIEWS.L_CC] = self.l_cc(x[VIEWS.L_CC])
-        h_dict[VIEWS.R_CC] = self.r_cc(x[VIEWS.R_CC])
-        h_dict[VIEWS.L_MLO] = self.l_mlo(x[VIEWS.L_MLO])
-        h_dict[VIEWS.R_MLO] = self.r_mlo(x[VIEWS.R_MLO])
+        h_dict = {
+            view: self.single_forward(x[view], view)
+            for view in VIEWS.LIST
+        }
         return h_dict
+
+    def single_forward(self, single_x, view):
+        return self.model_dict[view](single_x)
 
 
 class ViewResNetV2(nn.Module):
@@ -164,7 +218,6 @@ class ViewResNetV2(nn.Module):
         self.growth_factor = growth_factor
 
     def forward(self, x):
-        intermediate = []
         h = self.first_conv(x)
         h = self.first_pool(h)
         for i, layer in enumerate(self.layer_list):
@@ -187,3 +240,28 @@ class ViewResNetV2(nn.Module):
             layers_.append(block(self.inplanes, planes))
 
         return nn.Sequential(*layers_)
+
+
+def resnet22(input_channels):
+    return ViewResNetV2(
+        input_channels=input_channels,
+        num_filters=16,
+        first_layer_kernel_size=7,
+        first_layer_conv_stride=2,
+        blocks_per_layer_list=[2, 2, 2, 2, 2],
+        block_strides_list=[1, 2, 2, 2, 2],
+        block_fn=layers.BasicBlockV2,
+        first_layer_padding=0,
+        first_pool_size=3,
+        first_pool_stride=2,
+        first_pool_padding=0,
+        growth_factor=2
+    )
+
+
+def filter_strip_prefix(weights_dict, prefix):
+    return {
+        k.replace(prefix, ""): v
+        for k, v in weights_dict.items()
+        if k.startswith(prefix)
+    }

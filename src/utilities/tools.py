@@ -24,6 +24,7 @@
 Defines utility functions for various tasks in breast_cancer_classifier.
 """
 
+
 def partition_batch(ls, size):
     """
     Partitions a list into buckets of given maximum length.

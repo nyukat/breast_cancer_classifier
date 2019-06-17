@@ -1,4 +1,4 @@
-torch>=0.4.0
+torch>=0.4.1
 torchvision>=0.2.0
 numpy>=1.14.3
 scipy>=1.0.0

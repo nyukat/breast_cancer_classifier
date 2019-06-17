@@ -89,17 +89,14 @@ def prediction_by_batch(minibatch_patches, model, device, parameters):
     return output
 
 
-def ori_image_prepare(short_file_path, view, horizontal_flip, parameters):
+def ori_image_prepare(image_path, view, horizontal_flip, parameters):
     """
     Loads an image and creates stride_lists
     """
-    orginal_image_path = parameters['orginal_image_path']
     patch_size = parameters['patch_size']
     more_patches = parameters['more_patches']
     stride_fixed = parameters['stride_fixed']
-    
-    image_extension = '.hdf5' if parameters['use_hdf5'] else '.png'
-    image_path = os.path.join(orginal_image_path, short_file_path + image_extension)
+
     image = loading.load_image(image_path, view, horizontal_flip)
     image = image.astype(float)
     loading.standard_normalize_single_image(image)
@@ -175,7 +172,6 @@ def save_heatmaps(heatmap_malignant, heatmap_benign, short_file_path, view, hori
     """
     heatmap_malignant = loading.flip_image(heatmap_malignant, view, horizontal_flip)
     heatmap_benign = loading.flip_image(heatmap_benign, view, horizontal_flip)
-            
     heatmap_save_path_malignant = os.path.join(
         parameters['save_heatmap_path'][0], 
         short_file_path + '.hdf5'
@@ -189,6 +185,14 @@ def save_heatmaps(heatmap_malignant, heatmap_benign, short_file_path, view, hori
     saving_images.save_image_as_hdf5(heatmap_benign, heatmap_save_path_benign)
 
 
+def get_image_path(short_file_path, parameters):
+    """
+    Convert short_file_path to full file path
+    """
+    image_extension = '.hdf5' if parameters['use_hdf5'] else '.png'
+    return os.path.join(parameters['original_image_path'], short_file_path + image_extension)
+
+
 def sample_patches(exam, parameters):
     """
     Samples patches for one exam
@@ -197,33 +201,44 @@ def sample_patches(exam, parameters):
     all_cases = []
     for view in VIEWS.LIST:
         for short_file_path in exam[view]:
-             
-            image, width_stride_list, length_stride_list = ori_image_prepare(
-                short_file_path, 
-                view, 
-                exam['horizontal_flip'], 
-                parameters
+            image_path = get_image_path(short_file_path, parameters)
+            patches, case = sample_patches_single(
+                image_path=image_path,
+                view=view,
+                horizontal_flip=exam['horizontal_flip'],
+                parameters=parameters,
             )
-            
-            all_patches.extend(
-                patch_batch_prepare(
-                    image, 
-                    length_stride_list, 
-                    width_stride_list,
-                    parameters['patch_size']
-                )
-            )
-            all_cases.append(
-                (
-                     short_file_path, 
-                     image.shape, 
-                     view, 
-                     exam['horizontal_flip'],
-                     width_stride_list, 
-                     length_stride_list
-                )
-            )
+
+            all_patches += patches
+            all_cases.append([short_file_path] + case)
+
     return all_patches, all_cases
+
+
+def sample_patches_single(image_path, view, horizontal_flip, parameters):
+    """
+    Sample patches for a single mammogram image
+    """
+    image, width_stride_list, length_stride_list = ori_image_prepare(
+        image_path,
+        view,
+        horizontal_flip,
+        parameters,
+    )
+    patches = patch_batch_prepare(
+        image,
+        length_stride_list,
+        width_stride_list,
+        parameters['patch_size'],
+    )
+    case = [
+        image.shape,
+        view,
+        horizontal_flip,
+        width_stride_list,
+        length_stride_list,
+    ]
+    return patches, case
 
 
 def making_heatmap_with_large_minibatch_potential(parameters, model, exam_list, device):
@@ -255,7 +270,7 @@ def making_heatmap_with_large_minibatch_potential(parameters, model, exam_list, 
         
             for (short_file_path, image_shape, view, horizontal_flip, width_stride_list, length_stride_list) \
                     in all_cases:
-                
+
                 heatmap_malignant, _ = probabilities_to_heatmap(
                     patch_counter, 
                     all_prob, 
@@ -287,14 +302,11 @@ def making_heatmap_with_large_minibatch_potential(parameters, model, exam_list, 
                 
             del all_prob, all_cases
 
-        
-def load_model_and_produce_heatmaps(parameters):
-    """
-    Loads trained patch classifier and generates heatmaps for all exams
-    """
-    # set random seed at the beginning of program
-    random.seed(parameters['seed'])
 
+def load_model(parameters):
+    """
+    Load trained patch classifier
+    """
     if (parameters["device_type"] == "gpu") and torch.has_cudnn:
         device = torch.device("cuda:{}".format(parameters["gpu_number"]))
     else:
@@ -304,7 +316,13 @@ def load_model_and_produce_heatmaps(parameters):
     model.load_from_path(parameters["initial_parameters"])
     model = model.to(device)
     model.eval()
-    
+    return model, device
+
+
+def produce_heatmaps(model, device, parameters):
+    """
+    Generates heatmaps for all exams
+    """
     # Load exam info
     exam_list = pickling.unpickle_from_file(parameters['data_file'])    
 
@@ -341,7 +359,7 @@ def main():
         number_of_classes=4,
         
         data_file=args.data_path,
-        orginal_image_path=args.image_path,
+        original_image_path=args.image_path,
         save_heatmap_path=[os.path.join(args.output_heatmap_path, 'heatmap_malignant'),
                            os.path.join(args.output_heatmap_path, 'heatmap_benign')],
         
@@ -349,8 +367,9 @@ def main():
 
         use_hdf5=args.use_hdf5
     )
-
-    load_model_and_produce_heatmaps(parameters)
+    random.seed(parameters['seed'])
+    model, device = load_model(parameters)
+    produce_heatmaps(model, device, parameters)
 
 
 if __name__ == "__main__":

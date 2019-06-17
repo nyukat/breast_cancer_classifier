@@ -94,17 +94,16 @@ class AllViewsGaussianNoise(nn.Module):
         self.gaussian_noise_std = gaussian_noise_std
 
     def forward(self, x):
-        if not self.gaussian_noise_std or not self.training:
-            return x
-
         return {
-            VIEWS.L_CC: self._add_gaussian_noise(x[VIEWS.L_CC]),
-            VIEWS.L_MLO: self._add_gaussian_noise(x[VIEWS.L_MLO]),
-            VIEWS.R_CC: self._add_gaussian_noise(x[VIEWS.R_CC]),
-            VIEWS.R_MLO: self._add_gaussian_noise(x[VIEWS.R_MLO]),
+            VIEWS.L_CC: self.single_add_gaussian_noise(x[VIEWS.L_CC]),
+            VIEWS.L_MLO: self.single_add_gaussian_noise(x[VIEWS.L_MLO]),
+            VIEWS.R_CC: self.single_add_gaussian_noise(x[VIEWS.R_CC]),
+            VIEWS.R_MLO: self.single_add_gaussian_noise(x[VIEWS.R_MLO]),
         }
 
-    def _add_gaussian_noise(self, single_view):
+    def single_add_gaussian_noise(self, single_view):
+        if not self.gaussian_noise_std or not self.training:
+            return single_view
         return single_view + single_view.new(single_view.shape).normal_(std=self.gaussian_noise_std)
 
 
@@ -116,26 +115,11 @@ class AllViewsAvgPool(nn.Module):
 
     def forward(self, x):
         return {
-            view_name: self._avg_pool(view_tensor)
+            view_name: self.single_avg_pool(view_tensor)
             for view_name, view_tensor in x.items()
         }
 
     @staticmethod
-    def _avg_pool(single_view):
+    def single_avg_pool(single_view):
         n, c, _, _ = single_view.size()
         return single_view.view(n, c, -1).mean(-1)
-
-
-class AllViewsPad(nn.Module):
-    """Pad tensor across all 4 views"""
-
-    def __init__(self):
-        super(AllViewsPad, self).__init__()
-
-    def forward(self, x, pad):
-        return {
-            VIEWS.L_CC: F.pad(x[VIEWS.L_CC], pad),
-            VIEWS.L_MLO: F.pad(x[VIEWS.L_MLO], pad),
-            VIEWS.R_CC: F.pad(x[VIEWS.R_CC], pad),
-            VIEWS.R_MLO: F.pad(x[VIEWS.R_MLO], pad),
-        }

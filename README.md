@@ -11,10 +11,12 @@ Both models act on screening mammography exams with four standard views (L-CC, R
 
 **Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
 
+**Update (2019/06/21)**: We have included the *image-wise* model as described in the paper that generates predictions based on a single mammogram image. This model slightly under-performs the *view-wise* model used above, but can be used on single mammogram images as opposed to full exams.
+
 ## Prerequisites
 
 * Python (3.6)
-* PyTorch (0.4.0)
+* PyTorch (0.4.1)
 * torchvision (0.2.0)
 * NumPy (1.14.3)
 * SciPy (1.0.0)
@@ -30,7 +32,14 @@ This repository is licensed under the terms of the GNU AGPLv3 license.
 
 ## How to run the code
 
-`run.sh` will automatically run the entire pipeline and save the prediction results in csv. 
+### Exam-level
+
+Here we describe how to get predictions from *view-wise* model, which is our best-performing model. This model takes 4 images from each view as input and outputs predictions for each exam.
+
+```bash
+bash run.sh
+``` 
+will automatically run the entire pipeline and save the prediction results in csv. 
 
 We recommend running the code with a gpu (set by default). To run the code with cpu only, please change `DEVICE_TYPE` in `run.sh` to 'cpu'.  
 
@@ -57,6 +66,33 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 | 2     | 0.2877       | 0.2286       | 0.2524         | 0.0461          |
 | 3     | 0.4181       | 0.3172       | 0.3174         | 0.0485          |
 
+### Image-level
+
+Here we also upload *image-wise* model, which is different from and performs worse than the *view-wise* model described above. The csv output from *view-wise* model will be different from that of *image-wise* model in this section. Because this model has the benefit of creating predictions for each image separately, we make this model public to facilitate transfer learning.
+
+To use the *image-wise* model, run a command such as the following:
+
+```bash
+bash run_single.sh "sample_data/images/0_L_CC.png" "L-CC"
+``` 
+
+where the first argument is path to a mammogram image, and the second argument is the view corresponding to that image.
+
+You should obtain the following output based on the above example command:
+
+```
+Stage 1: Crop Mammograms
+Stage 2: Extract Centers
+Stage 3: Generate Heatmaps
+Stage 4a: Run Classifier (Image)
+{"benign": 0.040191903710365295, "malignant": 0.008045293390750885}
+Stage 4b: Run Classifier (Image+Heatmaps)
+{"benign": 0.052365876734256744, "malignant": 0.005510155577212572}
+```
+
+#### Image-level Notebook
+
+We have included a [sample notebook](sample_notebook.ipynb) that contains code for running the classifiers with and without heatmaps (excludes preprocessing).
 
 ## Data
 

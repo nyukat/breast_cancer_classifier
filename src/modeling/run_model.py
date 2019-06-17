@@ -1,8 +1,8 @@
-# Copyright (C) 2019 Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, 
-#   Stanisław Jastrzębski, Thibault Févry, Joe Katsnelson, Eric Kim, Stacey Wolfson, Ujas Parikh, 
-#   Sushma Gaddam, Leng Leng Young Lin, Kara Ho, Joshua D. Weinstein, Beatriu Reig, Yiming Gao, 
-#   Hildegard Toth, Kristine Pysarenko, Alana Lewin, Jiyon Lee, Krystal Airola, Eralda Mema, 
-#   Stephanie Chung, Esther Hwang, Naziya Samreen, S. Gene Kim, Laura Heacock, Linda Moy, 
+# Copyright (C) 2019 Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin,
+#   Stanisław Jastrzębski, Thibault Févry, Joe Katsnelson, Eric Kim, Stacey Wolfson, Ujas Parikh,
+#   Sushma Gaddam, Leng Leng Young Lin, Kara Ho, Joshua D. Weinstein, Beatriu Reig, Yiming Gao,
+#   Hildegard Toth, Kristine Pysarenko, Alana Lewin, Jiyon Lee, Krystal Airola, Eralda Mema,
+#   Stephanie Chung, Esther Hwang, Naziya Samreen, S. Gene Kim, Laura Heacock, Linda Moy,
 #   Kyunghyun Cho, Krzysztof J. Geras
 #
 # This file is part of breast_cancer_classifier.
@@ -35,21 +35,35 @@ import src.utilities.pickling as pickling
 import src.utilities.tools as tools
 import src.modeling.models as models
 import src.data_loading.loading as loading
-from src.constants import VIEWS, VIEWANGLES, LABELS
+from src.constants import VIEWS, VIEWANGLES, LABELS, MODELMODES
 
 
-def run_model(model, exam_list, parameters):
+def load_model(parameters):
     """
-    Returns predictions of image only model or image+heatmaps model. 
-    Prediction for each exam is averaged for a given number of epochs.
+    Loads trained cancer classifier
     """
+    input_channels = 3 if parameters["use_heatmaps"] else 1
+    model_class = {
+        MODELMODES.VIEW_SPLIT: models.SplitBreastModel,
+        MODELMODES.IMAGE: models.ImageBreastModel,
+    }[parameters["model_mode"]]
+    model = model_class(input_channels)
+    model.load_state_dict(torch.load(parameters["model_path"])["model"])
+
     if (parameters["device_type"] == "gpu") and torch.has_cudnn:
         device = torch.device("cuda:{}".format(parameters["gpu_number"]))
     else:
         device = torch.device("cpu")
     model = model.to(device)
     model.eval()
+    return model, device
 
+
+def run_model(model, device, exam_list, parameters):
+    """
+    Returns predictions of image only model or image+heatmaps model.
+    Prediction for each exam is averaged for a given number of epochs.
+    """
     random_number_generator = np.random.RandomState(parameters["seed"])
 
     image_extension = ".hdf5" if parameters["use_hdf5"] else ".png"
@@ -89,7 +103,7 @@ def run_model(model, exam_list, parameters):
                         if parameters["augmentation"]:
                             image_index = random_number_generator.randint(low=0, high=len(datum[view]))
                         cropped_image, cropped_heatmaps = loading.augment_and_normalize_image(
-                            image=loaded_image_dict[view][image_index], 
+                            image=loaded_image_dict[view][image_index],
                             auxiliary_image=loaded_heatmaps_dict[view][image_index],
                             view=view,
                             best_center=datum["best_center"][view][image_index],
@@ -111,38 +125,68 @@ def run_model(model, exam_list, parameters):
                     for view in VIEWS.LIST
                 }
                 output = model(tensor_batch)
-                batch_predictions = compute_batch_predictions(output)
+                batch_predictions = compute_batch_predictions(output, mode=parameters["model_mode"])
                 pred_df = pd.DataFrame({k: v[:, 1] for k, v in batch_predictions.items()})
                 pred_df.columns.names = ["label", "view_angle"]
                 predictions = pred_df.T.reset_index().groupby("label").mean().T[LABELS.LIST].values
                 predictions_for_datum.append(predictions)
             predictions_ls.append(np.mean(np.concatenate(predictions_for_datum, axis=0), axis=0))
 
-    return np.array(predictions_ls) 
+    return np.array(predictions_ls)
 
 
-def compute_batch_predictions(y_hat):
+def compute_batch_predictions(y_hat, mode):
     """
     Format predictions from different heads
     """
-    batch_prediction_dict = col.OrderedDict([
-        ((label_name, view_angle),
-         np.exp(y_hat[view_angle][:, i].cpu().detach().numpy()))
-        for i, label_name in enumerate(LABELS.LIST)
-        for view_angle in VIEWANGLES.LIST
-    ])
+
+    if mode == MODELMODES.VIEW_SPLIT:
+        assert y_hat[VIEWANGLES.CC].shape == (1, 4, 2)
+        assert y_hat[VIEWANGLES.MLO].shape == (1, 4, 2)
+        batch_prediction_tensor_dict = col.OrderedDict()
+        batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWANGLES.CC] = y_hat[VIEWANGLES.CC][:, 0]
+        batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWANGLES.MLO] = y_hat[VIEWANGLES.MLO][:, 0]
+        batch_prediction_tensor_dict[LABELS.RIGHT_BENIGN, VIEWANGLES.CC] = y_hat[VIEWANGLES.CC][:, 1]
+        batch_prediction_tensor_dict[LABELS.RIGHT_BENIGN, VIEWANGLES.MLO] = y_hat[VIEWANGLES.MLO][:, 1]
+        batch_prediction_tensor_dict[LABELS.LEFT_MALIGNANT, VIEWANGLES.CC] = y_hat[VIEWANGLES.CC][:, 2]
+        batch_prediction_tensor_dict[LABELS.LEFT_MALIGNANT, VIEWANGLES.MLO] = y_hat[VIEWANGLES.MLO][:, 2]
+        batch_prediction_tensor_dict[LABELS.RIGHT_MALIGNANT, VIEWANGLES.CC] = y_hat[VIEWANGLES.CC][:, 3]
+        batch_prediction_tensor_dict[LABELS.RIGHT_MALIGNANT, VIEWANGLES.MLO] = y_hat[VIEWANGLES.MLO][:, 3]
+        batch_prediction_dict = col.OrderedDict([
+            (k, np.exp(v.cpu().detach().numpy()))
+            for k, v in batch_prediction_tensor_dict.items()
+        ])
+    elif mode == MODELMODES.IMAGE:
+        assert y_hat[VIEWS.L_CC].shape == (1, 2, 2)
+        assert y_hat[VIEWS.R_CC].shape == (1, 2, 2)
+        assert y_hat[VIEWS.L_MLO].shape == (1, 2, 2)
+        assert y_hat[VIEWS.R_MLO].shape == (1, 2, 2)
+        batch_prediction_tensor_dict = col.OrderedDict()
+        batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_CC] = y_hat[VIEWS.L_CC][:, 0]
+        batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_MLO] = y_hat[VIEWS.L_MLO][:, 0]
+        batch_prediction_tensor_dict[LABELS.RIGHT_BENIGN, VIEWS.R_CC] = y_hat[VIEWS.R_CC][:, 0]
+        batch_prediction_tensor_dict[LABELS.RIGHT_BENIGN, VIEWS.R_MLO] = y_hat[VIEWS.R_MLO][:, 0]
+        batch_prediction_tensor_dict[LABELS.LEFT_MALIGNANT, VIEWS.L_CC] = y_hat[VIEWS.L_CC][:, 1]
+        batch_prediction_tensor_dict[LABELS.LEFT_MALIGNANT, VIEWS.L_MLO] = y_hat[VIEWS.L_MLO][:, 1]
+        batch_prediction_tensor_dict[LABELS.RIGHT_MALIGNANT, VIEWS.R_CC] = y_hat[VIEWS.R_CC][:, 1]
+        batch_prediction_tensor_dict[LABELS.RIGHT_MALIGNANT, VIEWS.R_MLO] = y_hat[VIEWS.R_MLO][:, 1]
+
+        batch_prediction_dict = col.OrderedDict([
+            (k, np.exp(v.cpu().detach().numpy()))
+            for k, v in batch_prediction_tensor_dict.items()
+        ])
+    else:
+        raise KeyError(mode)
     return batch_prediction_dict
 
 
-def load_run_save(model_path, data_path, output_path, parameters):
+def load_run_save(data_path, output_path, parameters):
     """
     Outputs the predictions as csv file
     """
-    input_channels = 3 if parameters["use_heatmaps"] else 1
-    model = models.SplitBreastModel(input_channels)
-    model.load_state_dict(torch.load(model_path)["model"])
     exam_list = pickling.unpickle_from_file(data_path)
-    predictions = run_model(model, exam_list, parameters)
+    model, device = load_model(parameters)
+    predictions = run_model(model, device, exam_list, parameters)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     # Take the positive prediction
     df = pd.DataFrame(predictions, columns=LABELS.LIST)
@@ -151,6 +195,7 @@ def load_run_save(model_path, data_path, output_path, parameters):
 
 def main():
     parser = argparse.ArgumentParser(description='Run image-only model or image+heatmap model')
+    parser.add_argument('--model-mode', default=MODELMODES.VIEW_SPLIT, type=str)
     parser.add_argument('--model-path', required=True)
     parser.add_argument('--data-path', required=True)
     parser.add_argument('--image-path', required=True)
@@ -178,10 +223,11 @@ def main():
         "num_epochs": args.num_epochs,
         "use_heatmaps": args.use_heatmaps,
         "heatmaps_path": args.heatmaps_path,
-        "use_hdf5": args.use_hdf5
+        "use_hdf5": args.use_hdf5,
+        "model_mode": args.model_mode,
+        "model_path": args.model_path,
     }
     load_run_save(
-        model_path=args.model_path,
         data_path=args.data_path,
         output_path=args.output_path,
         parameters=parameters,
