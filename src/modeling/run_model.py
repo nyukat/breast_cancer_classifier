@@ -141,8 +141,8 @@ def compute_batch_predictions(y_hat, mode):
     """
 
     if mode == MODELMODES.VIEW_SPLIT:
-        assert y_hat[VIEWANGLES.CC].shape == (1, 4, 2)
-        assert y_hat[VIEWANGLES.MLO].shape == (1, 4, 2)
+        assert y_hat[VIEWANGLES.CC].shape[1:] == (4, 2)
+        assert y_hat[VIEWANGLES.MLO].shape[1:] == (4, 2)
         batch_prediction_tensor_dict = col.OrderedDict()
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWANGLES.CC] = y_hat[VIEWANGLES.CC][:, 0]
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWANGLES.MLO] = y_hat[VIEWANGLES.MLO][:, 0]
@@ -157,10 +157,10 @@ def compute_batch_predictions(y_hat, mode):
             for k, v in batch_prediction_tensor_dict.items()
         ])
     elif mode == MODELMODES.IMAGE:
-        assert y_hat[VIEWS.L_CC].shape == (1, 2, 2)
-        assert y_hat[VIEWS.R_CC].shape == (1, 2, 2)
-        assert y_hat[VIEWS.L_MLO].shape == (1, 2, 2)
-        assert y_hat[VIEWS.R_MLO].shape == (1, 2, 2)
+        assert y_hat[VIEWS.L_CC].shape[1:] == (2, 2)
+        assert y_hat[VIEWS.R_CC].shape[1:] == (2, 2)
+        assert y_hat[VIEWS.L_MLO].shape[1:] == (2, 2)
+        assert y_hat[VIEWS.R_MLO].shape[1:] == (2, 2)
         batch_prediction_tensor_dict = col.OrderedDict()
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_CC] = y_hat[VIEWS.L_CC][:, 0]
         batch_prediction_tensor_dict[LABELS.LEFT_BENIGN, VIEWS.L_MLO] = y_hat[VIEWS.L_MLO][:, 0]
