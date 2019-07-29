@@ -9,9 +9,11 @@ This is an implementation of the model used for breast cancer classification as 
 
 Both models act on screening mammography exams with four standard views (L-CC, R-CC, L-MLO, R-MLO). As a part of this repository, we provide 4 sample exams (in `sample_data/images` directory and exam list stored in `sample_data/exam_list_before_cropping.pkl`). Heatmap generation model and cancer classification models are implemented in PyTorch. 
 
-**Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
+**Update (2019/08/26)**: We have added a [TensorFlow implementation](using_tensorflow.md) of our *image-wise* model.
 
 **Update (2019/06/21)**: We have included the *image-wise* model as described in the paper that generates predictions based on a single mammogram image. This model slightly under-performs the *view-wise* model used above, but can be used on single mammogram images as opposed to full exams.
+
+**Update (2019/05/15)**: Fixed a minor bug that caused the output DataFrame columns (`left_malignant`, `right_benign`) to be swapped. Note that this does not affect the operation of the model.
 
 ## Prerequisites
 
@@ -66,7 +68,7 @@ Predictions using *image-and-heatmaps* model (found in `sample_output/imageheatm
 | 2     | 0.2877       | 0.2286       | 0.2524         | 0.0461          |
 | 3     | 0.4181       | 0.3172       | 0.3174         | 0.0485          |
 
-### Image-level
+### Single Image
 
 Here we also upload *image-wise* model, which is different from and performs worse than the *view-wise* model described above. The csv output from *view-wise* model will be different from that of *image-wise* model in this section. Because this model has the benefit of creating predictions for each image separately, we make this model public to facilitate transfer learning.
 

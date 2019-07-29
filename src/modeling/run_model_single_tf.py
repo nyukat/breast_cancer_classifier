@@ -25,13 +25,15 @@ Runs the image only model and image+heatmaps model for breast cancer prediction.
 """
 import argparse
 import numpy as np
-import torch
 import json
+import tensorflow as tf
 
 import src.utilities.pickling as pickling
+import src.utilities.tf_utils as tf_utils
 import src.utilities.tools as tools
-import src.modeling.models as models
+import src.modeling.models_tf as models
 import src.data_loading.loading as loading
+from src.constants import INPUT_SIZE_DICT
 
 
 class ModelInput:
@@ -45,19 +47,39 @@ def load_model(parameters):
     """
     Loads trained cancer classifier
     """
+    # Setup model params
     input_channels = 3 if parameters["use_heatmaps"] else 1
-    model = models.SingleImageBreastModel(input_channels)
-    model.load_state_from_shared_weights(
-        state_dict=torch.load(parameters["model_path"])["model"],
-        view=parameters["view"],
-    )
-    if (parameters["device_type"] == "gpu") and torch.has_cudnn:
-        device = torch.device("cuda:{}".format(parameters["gpu_number"]))
+    if (parameters["device_type"] == "gpu") and tf.test.is_gpu_available():
+        device_str = "/device:GPU:{}".format(parameters["gpu_number"])
     else:
-        device = torch.device("cpu")
-    model = model.to(device)
-    model.eval()
-    return model, device
+        device_str = "/cpu:0"
+    view_str = parameters["view"].replace("-", "_").lower()
+    h, w = INPUT_SIZE_DICT[parameters["view"]]
+
+    # Setup Graph
+    graph = tf.Graph()
+    with graph.as_default():
+        with tf.device(device_str):
+            x = tf.placeholder(tf.float32, shape=[None, input_channels, h, w], name="inputs")
+            y = models.single_image_breast_model(x, training=False)
+
+    # Load weights
+    sess = tf.Session(graph=graph, config=tf.ConfigProto(
+        gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+    ))
+    with open(parameters["tf_torch_weights_map_path"]) as f:
+        tf_torch_weights_map = json.loads(f.read())
+
+    with sess.as_default():
+        match_dict = models.construct_single_image_breast_model_match_dict(
+            view_str=view_str,
+            tf_variables=tf_utils.get_tf_variables(graph, batch_norm_key="bn"),
+            torch_weights=parameters["model_path"],
+            tf_torch_weights_map=tf_torch_weights_map,
+        )
+        sess.run(tf_utils.construct_weight_assign_ops(match_dict))
+
+    return sess, x, y
 
 
 def load_inputs(image_path, metadata_path,
@@ -112,11 +134,11 @@ def process_augment_inputs(model_input, random_number_generator, parameters):
         return cropped_image[:, :, np.newaxis]
 
 
-def batch_to_tensor(batch, device):
+def batch_to_inputs(batch):
     """
-    Convert list of input ndarrays to tensor on device
+    Convert list of input ndarrays to prepped inputs
     """
-    return torch.tensor(np.stack(batch)).permute(0, 3, 1, 2).to(device)
+    return np.transpose(np.stack(batch), [0, 3, 1, 2])
 
 
 def run(parameters):
@@ -124,7 +146,7 @@ def run(parameters):
     Outputs the predictions as csv file
     """
     random_number_generator = np.random.RandomState(parameters["seed"])
-    model, device = load_model(parameters)
+    sess, x, y = load_model(parameters)
 
     model_input = load_inputs(
         image_path=parameters["cropped_mammogram_path"],
@@ -144,10 +166,10 @@ def run(parameters):
                 random_number_generator=random_number_generator,
                 parameters=parameters,
             ))
-        tensor_batch = batch_to_tensor(batch, device)
-        with torch.no_grad():
-            y_hat = model(tensor_batch)
-        predictions = np.exp(y_hat.cpu().detach().numpy())[:, :2, 1]
+        x_data = batch_to_inputs(batch)
+        with sess.as_default():
+            y_hat = sess.run(y, feed_dict={x: x_data})
+        predictions = np.exp(y_hat)[:, :, 1]
         all_predictions.append(predictions)
     agg_predictions = np.concatenate(all_predictions, axis=0).mean(0)
     predictions_dict = {
@@ -161,6 +183,7 @@ def main():
     parser = argparse.ArgumentParser(description='Run image-only model or image+heatmap model')
     parser.add_argument('--view', required=True)
     parser.add_argument('--model-path', required=True)
+    parser.add_argument('--tf-torch-weights-map-path', required=True)
     parser.add_argument('--cropped-mammogram-path', required=True)
     parser.add_argument('--metadata-path', required=True)
     parser.add_argument('--batch-size', default=1, type=int)
@@ -178,6 +201,7 @@ def main():
     parameters = {
         "view": args.view,
         "model_path": args.model_path,
+        "tf_torch_weights_map_path": args.tf_torch_weights_map_path,
         "cropped_mammogram_path": args.cropped_mammogram_path,
         "metadata_path": args.metadata_path,
         "device_type": args.device_type,
@@ -198,4 +222,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
