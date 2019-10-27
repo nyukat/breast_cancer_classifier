@@ -1,13 +1,15 @@
 # Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening
 
 ## Introduction
-This is an implementation of the model used for breast cancer classification as described in our paper [Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening](https://arxiv.org/abs/1903.08297). The implementation allows users to get breast cancer predictions by applying one of our pretrained models: a model which takes images as input (*image-only*) and a model which takes images and heatmaps as input (*image-and-heatmaps*). 
+This is an implementation of the model used for breast cancer classification as described in our paper [Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening](https://ieeexplore.ieee.org/document/8861376). The implementation allows users to get breast cancer predictions by applying one of our pretrained models: a model which takes images as input (*image-only*) and a model which takes images and heatmaps as input (*image-and-heatmaps*). 
 
 * Input images: 2 CC view mammography images of size 2677x1942 and 2 MLO view mammography images of size 2974x1748. Each image is saved as 16-bit png file and gets standardized separately before being fed to the models.
 * Input heatmaps: output of the patch classifier constructed to be the same size as its corresponding mammogram. Two heatmaps are generated for each mammogram, one for benign and one for malignant category. The value of each pixel in both of them is between 0 and 1.
 * Output: 2 predictions for each breast, probability of benign and malignant findings: `left_benign`, `right_benign`, `left_malignant`, and `right_malignant`.
 
 Both models act on screening mammography exams with four standard views (L-CC, R-CC, L-MLO, R-MLO). As a part of this repository, we provide 4 sample exams (in `sample_data/images` directory and exam list stored in `sample_data/exam_list_before_cropping.pkl`). Heatmap generation model and cancer classification models are implemented in PyTorch. 
+
+**Update (2019/10/26)**: [Our paper](https://ieeexplore.ieee.org/document/8861376) will be published in the IEEE Transactions on Medical Imaging!
 
 **Update (2019/08/26)**: We have added a [TensorFlow implementation](using_tensorflow.md) of our *image-wise* model.
 
@@ -314,6 +316,6 @@ Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, Stanisła
     @article{wu2019breastcancer, 
         title = {Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening},
         author = {Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, Stanis\l{}aw Jastrz\k{e}bski, Thibault F\'{e}vry, Joe Katsnelson, Eric Kim, Stacey Wolfson, Ujas Parikh, Sushma Gaddam, Leng Leng Young Lin, Kara Ho, Joshua D. Weinstein, Beatriu Reig, Yiming Gao, Hildegard Toth, Kristine Pysarenko, Alana Lewin, Jiyon Lee, Krystal Airola, Eralda Mema, Stephanie Chung, Esther Hwang, Naziya Samreen, S. Gene Kim, Laura Heacock, Linda Moy, Kyunghyun Cho, Krzysztof J. Geras}, 
-        journal = {arXiv:1903.08297},
+        journal = {IEEE Transactions on Medical Imaging},
         year = {2019}
     }
