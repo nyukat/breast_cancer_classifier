@@ -316,7 +316,7 @@ IEEE Transactions on Medical Imaging\
 
     @article{wu2019breastcancer, 
         title = {Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening},
-        author = {Nan Wu, Jason Phang, Jungkyu Park, Yiqiu Shen, Zhe Huang, Masha Zorin, Stanis\l{}aw Jastrz\k{e}bski, Thibault F\'{e}vry, Joe Katsnelson, Eric Kim, Stacey Wolfson, Ujas Parikh, Sushma Gaddam, Leng Leng Young Lin, Kara Ho, Joshua D. Weinstein, Beatriu Reig, Yiming Gao, Hildegard Toth, Kristine Pysarenko, Alana Lewin, Jiyon Lee, Krystal Airola, Eralda Mema, Stephanie Chung, Esther Hwang, Naziya Samreen, S. Gene Kim, Laura Heacock, Linda Moy, Kyunghyun Cho, Krzysztof J. Geras}, 
+        author = {Nan Wu and Jason Phang and Jungkyu Park and Yiqiu Shen and Zhe Huang and Masha Zorin and Stanis\l{}aw Jastrz\k{e}bski and Thibault F\'{e}vry and Joe Katsnelson and Eric Kim and Stacey Wolfson and Ujas Parikh and Sushma Gaddam and Leng Leng Young Lin and Kara Ho and Joshua D. Weinstein and Beatriu Reig and Yiming Gao and Hildegard Toth and Kristine Pysarenko and Alana Lewin and Jiyon Lee and Krystal Airola and Eralda Mema and Stephanie Chung and Esther Hwang and Naziya Samreen and S. Gene Kim and Laura Heacock and Linda Moy and Kyunghyun Cho and Krzysztof J. Geras}, 
         journal = {IEEE Transactions on Medical Imaging},
         year = {2019}
     }
