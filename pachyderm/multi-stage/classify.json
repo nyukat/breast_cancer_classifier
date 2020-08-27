@@ -1,0 +1,48 @@
+{
+    "pipeline": {
+        "name": "classify"
+    },
+    "description": "Runs the image only model and image+heatmaps model for breast cancer prediction.",
+    "input": {
+        "cross": [
+            {
+              "pfs": {
+                "repo": "crop",
+                "glob": "/"
+              }
+            },
+            {
+              "pfs": {
+                "repo": "models",
+                "glob": "/"
+              }
+            },
+            {
+              "pfs": {
+                "repo": "extract_centers",
+                "glob": "/"
+              }
+            },
+            {
+              "pfs": {
+                "repo": "generate_heatmaps",
+                "glob": "/"
+              }
+            }
+          ]
+    },
+    "standby": true,
+    "transform": {
+        "cmd": [
+            "/bin/bash",
+            "pachyderm/multi-stage/classify.sh"
+        ],
+        "image": "jimmywhitaker/breast_cancer_classifier:dev0.13"
+    },
+    "resource_limits": {
+        "gpu": {
+          "type": "nvidia.com/gpu",
+          "number": 1
+        }
+    }
+}
