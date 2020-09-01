@@ -2,9 +2,11 @@
 
 NUM_PROCESSES=10
 
-CROPPED_IMAGE_PATH='/pfs/crop/cropped_images'
-CROPPED_EXAM_LIST_PATH='/pfs/crop/cropped_images/cropped_exam_list.pkl'
-EXAM_LIST_PATH='/pfs/out/data.pkl'
+ID=$(ls /pfs/crop/ | head -n 1)
+
+CROPPED_IMAGE_PATH="/pfs/crop/${ID}/cropped_images"
+CROPPED_EXAM_LIST_PATH="/pfs/crop/${ID}/cropped_images/cropped_exam_list.pkl"
+EXAM_LIST_PATH="/pfs/out/${ID}/data.pkl"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo 'Stage 2: Extract Centers'

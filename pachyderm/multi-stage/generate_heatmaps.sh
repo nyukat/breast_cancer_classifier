@@ -4,11 +4,12 @@ DEVICE_TYPE='gpu'
 HEATMAP_BATCH_SIZE=100
 GPU_NUMBER=0
 
-PATCH_MODEL_PATH='/pfs/models/sample_patch_model.p'
+ID=$(ls /pfs/crop/ | head -n 1)
+PATCH_MODEL_PATH="/pfs/models/sample_patch_model.p"
 
-CROPPED_IMAGE_PATH='/pfs/crop/cropped_images'
-EXAM_LIST_PATH='/pfs/extract_centers/data.pkl'
-HEATMAPS_PATH='/pfs/out/heatmaps'
+CROPPED_IMAGE_PATH="/pfs/crop/${ID}/cropped_images"
+EXAM_LIST_PATH="/pfs/extract_centers/${ID}/data.pkl"
+HEATMAPS_PATH="/pfs/out/${ID}/heatmaps"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo 'Stage 3: Generate Heatmaps'

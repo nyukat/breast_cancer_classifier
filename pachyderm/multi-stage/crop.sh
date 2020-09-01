@@ -2,12 +2,13 @@
 
 NUM_PROCESSES=10
 
-DATA_FOLDER='/pfs/sample_data/images'
-INITIAL_EXAM_LIST_PATH='/pfs/sample_data/exam_list_before_cropping.pkl'
+ID=$(ls /pfs/sample_data/ | head -n 1)
+DATA_FOLDER="/pfs/sample_data/${ID}/"
+INITIAL_EXAM_LIST_PATH="/pfs/sample_data/${ID}/gen_exam_list_before_cropping.pkl"
 
-CROPPED_IMAGE_PATH='/pfs/out/cropped_images'
-CROPPED_EXAM_LIST_PATH='/pfs/out/cropped_images/cropped_exam_list.pkl'
-EXAM_LIST_PATH='/pfs/out/data.pkl'
+CROPPED_IMAGE_PATH="/pfs/out/${ID}/cropped_images"
+CROPPED_EXAM_LIST_PATH="/pfs/out/${ID}/cropped_images/cropped_exam_list.pkl"
+EXAM_LIST_PATH="/pfs/out/${ID}/data.pkl"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo 'Stage 1: Crop Mammograms'

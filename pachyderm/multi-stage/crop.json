@@ -6,7 +6,7 @@
   "input": {
     "pfs": {
       "repo": "sample_data",
-      "glob": "/"
+      "glob": "/*"
     }
   },
   "standby": true,
@@ -15,6 +15,6 @@
       "/bin/bash",
       "pachyderm/multi-stage/crop.sh"
     ],
-    "image": "jimmywhitaker/breast_cancer_classifier:dev0.13"
+    "image": "jimmywhitaker/breast_cancer_classifier:dev0.22"
   }
 }

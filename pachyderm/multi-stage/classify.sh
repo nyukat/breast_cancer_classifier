@@ -5,12 +5,13 @@ NUM_EPOCHS=10
 HEATMAP_BATCH_SIZE=100
 GPU_NUMBER=0
 
-IMAGEHEATMAPS_MODEL_PATH='/pfs/models/sample_imageheatmaps_model.p'
+ID=$(ls /pfs/crop/ | head -n 1)
+IMAGEHEATMAPS_MODEL_PATH="/pfs/models/sample_imageheatmaps_model.p"
 
-CROPPED_IMAGE_PATH='/pfs/crop/cropped_images'
-EXAM_LIST_PATH='/pfs/extract_centers/data.pkl'
-HEATMAPS_PATH='/pfs/generate_heatmaps/heatmaps'
-IMAGEHEATMAPS_PREDICTIONS_PATH='/pfs/out/imageheatmaps_predictions.csv'
+CROPPED_IMAGE_PATH="/pfs/crop/${ID}/cropped_images"
+EXAM_LIST_PATH="/pfs/extract_centers/${ID}/data.pkl"
+HEATMAPS_PATH="/pfs/generate_heatmaps/${ID}/heatmaps"
+IMAGEHEATMAPS_PREDICTIONS_PATH="/pfs/out/${ID}/imageheatmaps_predictions.csv"
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 echo 'Stage 4b: Run Classifier (Image+Heatmaps)'
