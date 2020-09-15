@@ -7,4 +7,4 @@ imageio>=2.4.1
 pandas>=0.22.0
 tqdm>=4.19.8
 opencv-python>=3.4.2
-pillow=6.2.2
+pillow==6.2.2
