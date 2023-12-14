@@ -1,3 +1,5 @@
+# DISCLAIMER: this model is not used clinically at NYU Langone Health. As it was created in 2019, its accuracy is far behind the strongest model we trained since then. If you are interested in discussing our recent models in any capacity, please email [Krzysztof J. Geras](mailto:krzysztof.geras@nyulangone.org).
+
 # Deep Neural Networks Improve Radiologists' Performance in Breast Cancer Screening
 
 ## Introduction
